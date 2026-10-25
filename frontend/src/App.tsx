@@ -283,7 +283,7 @@ function App() {
           <li>Demo mode uses a deterministic mock provider response, not live model output.</li>
         </ul>
         <p>
-          Repository link placeholder: update after push to GitHub.
+          GitHub repository: https://github.com/UdhaviVerma/promptshield-ai-privacy-gateway
         </p>
       </footer>
     </div>
