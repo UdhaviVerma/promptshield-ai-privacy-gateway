@@ -5,7 +5,11 @@ import com.udhav.promptshield.domain.DataCategory;
 import com.udhav.promptshield.domain.PolicyAction;
 import com.udhav.promptshield.domain.PolicyRule;
 import com.udhav.promptshield.repository.PolicyRuleRepository;
-import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.dao.DataAccessException;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,19 +19,25 @@ import java.util.List;
 @Service
 public class PolicyService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PolicyService.class);
+
     private final PolicyRuleRepository policyRuleRepository;
 
     public PolicyService(PolicyRuleRepository policyRuleRepository) {
         this.policyRuleRepository = policyRuleRepository;
     }
 
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void initializeDefaults() {
-        upsertDefault("rule-email", DataCategory.EMAIL, PolicyAction.MASK, "Mask email-like values before forwarding");
-        upsertDefault("rule-phone", DataCategory.PHONE, PolicyAction.MASK, "Mask phone-like values before forwarding");
-        upsertDefault("rule-payment-card", DataCategory.PAYMENT_CARD, PolicyAction.BLOCK, "Block prompts containing valid payment-card-like numbers");
-        upsertDefault("rule-api-key", DataCategory.API_KEY, PolicyAction.BLOCK, "Block prompts containing common API-key patterns");
+        try {
+            upsertDefault("rule-email", DataCategory.EMAIL, PolicyAction.MASK, "Mask email-like values before forwarding");
+            upsertDefault("rule-phone", DataCategory.PHONE, PolicyAction.MASK, "Mask phone-like values before forwarding");
+            upsertDefault("rule-payment-card", DataCategory.PAYMENT_CARD, PolicyAction.BLOCK, "Block prompts containing valid payment-card-like numbers");
+            upsertDefault("rule-api-key", DataCategory.API_KEY, PolicyAction.BLOCK, "Block prompts containing common API-key patterns");
+        } catch (DataAccessException ex) {
+            LOGGER.warn("Skipping policy-rule bootstrap because database schema is not ready yet.", ex);
+        }
     }
 
     private void upsertDefault(String id, DataCategory category, PolicyAction action, String description) {
