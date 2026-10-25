@@ -21,7 +21,7 @@ services:
           name: wayfarer-db
           property: password
       - key: CORS_ALLOWED_ORIGINS
-        value: https://promptshield-frontend.onrender.com
+        value: https://promptshield-frontend.onrender.com,https://promptshield-frontend-5gmn.onrender.com
       - key: PROVIDER_ENABLED
         value: "false"
 
