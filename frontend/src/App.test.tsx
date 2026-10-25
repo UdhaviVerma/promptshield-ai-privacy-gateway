@@ -49,8 +49,9 @@ describe('App', () => {
     const button = await screen.findByRole('button', { name: /Inspect Prompt/i });
     await user.click(button);
 
-    expect(await screen.findByTestId('inspection-result')).toBeInTheDocument();
-    expect(screen.getByText(/MASK/)).toBeInTheDocument();
-    expect(screen.getByText(/DEMO_PROVIDER_RESPONSE/)).toBeInTheDocument();
+    const resultPanel = await screen.findByTestId('inspection-result');
+    expect(resultPanel).toBeInTheDocument();
+    expect(resultPanel).toHaveTextContent('MASK');
+    expect(resultPanel).toHaveTextContent('DEMO_PROVIDER_RESPONSE');
   });
 });
