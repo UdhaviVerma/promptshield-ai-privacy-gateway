@@ -1,6 +1,24 @@
 import type { AuditEntry, AuditSummary, InspectResponse, PolicyAction, PolicyRule, ProviderMode } from './types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const FALLBACK_API_BASE_URL = 'http://localhost:8080';
+const LEGACY_RENDER_BACKEND_URL = 'https://promptshield-backend.onrender.com';
+const LIVE_RENDER_BACKEND_URL = 'https://promptshield-backend-bxjc.onrender.com';
+
+function resolveApiBaseUrl(): string {
+  const configured = import.meta.env.VITE_API_BASE_URL;
+  if (!configured) {
+    return FALLBACK_API_BASE_URL;
+  }
+
+  const trimmed = configured.trim();
+  if (trimmed === LEGACY_RENDER_BACKEND_URL) {
+    return LIVE_RENDER_BACKEND_URL;
+  }
+
+  return trimmed;
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 async function parseJson<T>(response: Response): Promise<T> {
   if (!response.ok) {

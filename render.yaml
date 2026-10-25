@@ -32,4 +32,4 @@ services:
     plan: free
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://promptshield-backend.onrender.com
+        value: https://promptshield-backend-bxjc.onrender.com
