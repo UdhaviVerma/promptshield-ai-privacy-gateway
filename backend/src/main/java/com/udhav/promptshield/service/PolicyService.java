@@ -28,7 +28,6 @@ public class PolicyService {
     }
 
     @EventListener(ApplicationReadyEvent.class)
-    @Transactional
     public void initializeDefaults() {
         try {
             upsertDefault("rule-email", DataCategory.EMAIL, PolicyAction.MASK, "Mask email-like values before forwarding");
