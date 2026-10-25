@@ -6,7 +6,10 @@ import com.udhav.promptshield.domain.AuditEntry;
 import com.udhav.promptshield.domain.PolicyAction;
 import com.udhav.promptshield.domain.ProviderMode;
 import com.udhav.promptshield.repository.AuditEntryRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +20,8 @@ import java.util.List;
 
 @Service
 public class AuditService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuditService.class);
 
     private final AuditEntryRepository auditEntryRepository;
     private final int defaultRetentionDays;
@@ -38,29 +43,48 @@ public class AuditService {
                 String.join(",", categories),
                 categories.size()
         );
-        auditEntryRepository.save(entry);
+        try {
+            auditEntryRepository.save(entry);
+        } catch (DataAccessException ex) {
+            LOGGER.warn("Skipping audit save because audit storage is unavailable.", ex);
+        }
     }
 
     @Transactional(readOnly = true)
     public List<AuditEntryView> listLatest() {
-        return auditEntryRepository.findTop100ByOrderByCreatedAtDesc().stream()
-                .map(this::toView)
-                .toList();
+        try {
+            return auditEntryRepository.findTop100ByOrderByCreatedAtDesc().stream()
+                    .map(this::toView)
+                    .toList();
+        } catch (DataAccessException ex) {
+            LOGGER.warn("Audit table is unavailable; returning empty audit list.", ex);
+            return List.of();
+        }
     }
 
     @Transactional(readOnly = true)
     public AuditSummaryView summary() {
-        long allow = auditEntryRepository.countByFinalAction(PolicyAction.ALLOW.name());
-        long mask = auditEntryRepository.countByFinalAction(PolicyAction.MASK.name());
-        long block = auditEntryRepository.countByFinalAction(PolicyAction.BLOCK.name());
-        return new AuditSummaryView(allow + mask + block, allow, mask, block);
+        try {
+            long allow = auditEntryRepository.countByFinalAction(PolicyAction.ALLOW.name());
+            long mask = auditEntryRepository.countByFinalAction(PolicyAction.MASK.name());
+            long block = auditEntryRepository.countByFinalAction(PolicyAction.BLOCK.name());
+            return new AuditSummaryView(allow + mask + block, allow, mask, block);
+        } catch (DataAccessException ex) {
+            LOGGER.warn("Audit table is unavailable; returning empty summary.", ex);
+            return new AuditSummaryView(0, 0, 0, 0);
+        }
     }
 
     @Transactional
     public long deleteOlderThan(Integer olderThanDays) {
         int days = olderThanDays == null ? defaultRetentionDays : olderThanDays;
         Instant cutoff = Instant.now().minus(days, ChronoUnit.DAYS);
-        return auditEntryRepository.deleteByCreatedAtBefore(cutoff);
+        try {
+            return auditEntryRepository.deleteByCreatedAtBefore(cutoff);
+        } catch (DataAccessException ex) {
+            LOGGER.warn("Audit table is unavailable; delete operation skipped.", ex);
+            return 0;
+        }
     }
 
     private AuditEntryView toView(AuditEntry entry) {

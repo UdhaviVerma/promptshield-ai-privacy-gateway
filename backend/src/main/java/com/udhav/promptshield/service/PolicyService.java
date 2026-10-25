@@ -47,32 +47,51 @@ public class PolicyService {
 
     @Transactional(readOnly = true)
     public List<PolicyRuleView> allRules() {
-        return policyRuleRepository.findAll().stream()
-                .sorted(Comparator.comparing(PolicyRule::getId))
-                .map(r -> new PolicyRuleView(r.getId(), r.getCategory(), r.getAction(), r.getDescription()))
-                .toList();
+        try {
+            return policyRuleRepository.findAll().stream()
+                    .sorted(Comparator.comparing(PolicyRule::getId))
+                    .map(r -> new PolicyRuleView(r.getId(), r.getCategory(), r.getAction(), r.getDescription()))
+                    .toList();
+        } catch (DataAccessException ex) {
+            LOGGER.warn("Policy table is unavailable; returning empty policy list.", ex);
+            return List.of();
+        }
     }
 
     @Transactional
     public PolicyRuleView updateAction(String ruleId, PolicyAction action) {
-        PolicyRule rule = policyRuleRepository.findById(ruleId)
-                .orElseThrow(() -> new PromptshieldException(404, "RULE_NOT_FOUND", "Rule not found: " + ruleId));
-        rule.setAction(action);
-        policyRuleRepository.save(rule);
-        return new PolicyRuleView(rule.getId(), rule.getCategory(), rule.getAction(), rule.getDescription());
+        try {
+            PolicyRule rule = policyRuleRepository.findById(ruleId)
+                    .orElseThrow(() -> new PromptshieldException(404, "RULE_NOT_FOUND", "Rule not found: " + ruleId));
+            rule.setAction(action);
+            policyRuleRepository.save(rule);
+            return new PolicyRuleView(rule.getId(), rule.getCategory(), rule.getAction(), rule.getDescription());
+        } catch (DataAccessException ex) {
+            throw new PromptshieldException(503, "POLICY_STORE_UNAVAILABLE", "Policy store is temporarily unavailable");
+        }
     }
 
     @Transactional(readOnly = true)
     public PolicyAction actionForCategory(DataCategory category) {
-        return policyRuleRepository.findByCategory(category)
-                .map(PolicyRule::getAction)
-                .orElse(PolicyAction.MASK);
+        try {
+            return policyRuleRepository.findByCategory(category)
+                    .map(PolicyRule::getAction)
+                    .orElse(PolicyAction.MASK);
+        } catch (DataAccessException ex) {
+            LOGGER.warn("Policy table is unavailable; defaulting action to MASK for category {}.", category);
+            return PolicyAction.MASK;
+        }
     }
 
     @Transactional(readOnly = true)
     public String ruleIdForCategory(DataCategory category) {
-        return policyRuleRepository.findByCategory(category)
-                .map(PolicyRule::getId)
-                .orElse("rule-unknown");
+        try {
+            return policyRuleRepository.findByCategory(category)
+                    .map(PolicyRule::getId)
+                    .orElse("rule-unknown");
+        } catch (DataAccessException ex) {
+            LOGGER.warn("Policy table is unavailable; defaulting rule id for category {}.", category);
+            return "rule-unknown";
+        }
     }
 }
