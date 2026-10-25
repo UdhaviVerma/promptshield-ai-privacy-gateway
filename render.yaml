@@ -10,15 +10,15 @@ services:
         value: 8080
       - key: DATABASE_URL
         fromDatabase:
-          name: promptshield-db
+          name: wayfarer-db
           property: connectionString
       - key: DATABASE_USER
         fromDatabase:
-          name: promptshield-db
+          name: wayfarer-db
           property: user
       - key: DATABASE_PASSWORD
         fromDatabase:
-          name: promptshield-db
+          name: wayfarer-db
           property: password
       - key: CORS_ALLOWED_ORIGINS
         value: https://promptshield-frontend.onrender.com
@@ -33,9 +33,3 @@ services:
     envVars:
       - key: VITE_API_BASE_URL
         value: https://promptshield-backend.onrender.com
-
-databases:
-  - name: promptshield-db
-    plan: free
-    databaseName: promptshield
-    user: promptshield
